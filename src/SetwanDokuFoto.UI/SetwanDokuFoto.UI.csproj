@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>SetwanDokuFoto.UI</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SetwanDokuFoto.Core\SetwanDokuFoto.Core.csproj" />
+    <ProjectReference Include="..\SetwanDokuFoto.DocxEngine\SetwanDokuFoto.DocxEngine.csproj" />
+    <ProjectReference Include="..\SetwanDokuFoto.PrintEngine\SetwanDokuFoto.PrintEngine.csproj" />
+    <ProjectReference Include="..\SetwanDokuFoto.Data\SetwanDokuFoto.Data.csproj" />
+  </ItemGroup>
+</Project>
