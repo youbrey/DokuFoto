@@ -3,108 +3,310 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="clr-namespace:SetwanDokuFoto.UI.ViewModels"
+        xmlns:controls="clr-namespace:SetwanDokuFoto.UI.Controls"
         mc:Ignorable="d"
-        Title="Setwan DokuFoto - Sekretariat DPRD Kota Bitung" 
-        Height="850" Width="1350"
+        Title="Setwan DokuFoto — Sekretariat DPRD Kota Bitung"
+        MinWidth="1180" MinHeight="720" Width="1540" Height="930"
         WindowStartupLocation="CenterScreen"
-        Background="#0F172A">
-    
+        WindowState="Maximized"
+        Background="{StaticResource AppBackgroundBrush}"
+        PreviewKeyDown="OnPreviewKeyDown">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="60"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="30"/>
+            <RowDefinition Height="72" />
+            <RowDefinition Height="48" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="30" />
         </Grid.RowDefinitions>
 
-        <!-- Top Navigation Bar -->
-        <Border Grid.Row="0" Background="#1E293B" BorderBrush="#334155" BorderThickness="0,0,0,1">
-            <DockPanel Margin="16,0">
+        <!-- Global product header: mirrors the React prototype, implemented natively in WPF. -->
+        <Border Grid.Row="0" Background="{StaticResource NavigationBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="16,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="42" Height="42" CornerRadius="12" Background="{StaticResource PrimaryBrush}" BorderBrush="#55BAE6FD" BorderThickness="1" Margin="0,0,11,0">
+                        <TextBlock Text="DF" Foreground="White" FontSize="15" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Setwan " Foreground="White" FontSize="16" FontWeight="ExtraBold" />
+                            <TextBlock Text="DokuFoto" Foreground="#38BDF8" FontSize="16" FontWeight="ExtraBold" />
+                            <Border Background="#0C4A6E" BorderBrush="#0369A1" BorderThickness="1" CornerRadius="8" Padding="7,2" Margin="9,0,0,0">
+                                <TextBlock Text="DPRD KOTA BITUNG" Foreground="#BAE6FD" FontSize="9" FontWeight="Bold" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="Pembuat dokumen kolase foto kegiatan resmi • offline Windows" Style="{StaticResource MutedText}" Margin="0,3,0,0" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Border Grid.Column="1" Background="#AA070B14" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Margin="34,13" MaxWidth="470">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding CurrentProject.PaperSize}" Foreground="#7DD3FC" FontSize="10" FontWeight="Bold" Margin="8" VerticalAlignment="Center" />
+                        <TextBox Text="{Binding CurrentProject.Title, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" FontWeight="SemiBold" FontSize="11" />
+                    </DockPanel>
+                </Border>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="＋ Baru" Command="{Binding NewProjectCommand}" Margin="0,0,7,0" />
+                    <Button Content="Buka" Command="{Binding LoadProjectCommand}" Margin="0,0,7,0" />
+                    <Button Content="Simpan" Command="{Binding SaveProjectCommand}" Margin="0,0,7,0" />
+                    <Button Content="Pratinjau &amp; Cetak" Command="{Binding PrintDocumentCommand}" Margin="0,0,7,0" />
+                    <Button Content="Ekspor .DOCX" Command="{Binding ExportDocxCommand}" Style="{StaticResource PrimaryButton}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Context toolbar -->
+        <Border Grid.Row="1" Background="#0B1120" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="12,0">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="SETWAN DOKUFOTO" Foreground="#38BDF8" FontWeight="Bold" FontSize="16" Margin="0,0,10,0"/>
-                    <TextBlock Text="• Sekretariat DPRD Kota Bitung" Foreground="#94A3B8" FontSize="13" VerticalAlignment="Center"/>
+                    <Button Content="Impor Foto" Command="{Binding ImportPhotosCommand}" Style="{StaticResource PrimaryButton}" Padding="11,5" Margin="0,0,8,0" />
+                    <Separator Width="1" Height="23" Background="{StaticResource BorderBrush}" Margin="1,0,9,0" />
+                    <Button Content="Crop" Click="Crop_Click" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" Padding="10,5" Margin="0,0,5,0" />
+                    <Button Content="↶ Putar -15°" Click="RotateLeft_Click" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" Padding="9,5" Margin="0,0,5,0" />
+                    <Button Content="Putar +15° ↷" Click="RotateRight_Click" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" Padding="9,5" Margin="0,0,5,0" />
+                    <Button Content="Reset" Click="ResetCrop_Click" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" Padding="9,5" Margin="0,0,5,0" />
+                    <Button Content="Undo" Click="UndoCrop_Click" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" Padding="9,5" Margin="0,0,5,0" />
+                    <Button Content="Redo" Click="RedoCrop_Click" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" Padding="9,5" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Content="Ekspor Dokumen .docx" Command="{Binding ExportDocxCommand}" Margin="4" Padding="12,6" Background="#0284C7" Foreground="White" FontWeight="Bold"/>
-                    <Button Content="Pratinjau &amp; Cetak" Command="{Binding PrintDocumentCommand}" Margin="4" Padding="12,6" Background="#059669" Foreground="White" FontWeight="Bold"/>
+                    <TextBlock Text="Zoom kanvas" Foreground="{StaticResource TextSecondaryBrush}" FontSize="10" VerticalAlignment="Center" Margin="0,0,7,0" />
+                    <Button Content="−" Command="{Binding ZoomCanvasOutCommand}" Width="28" Padding="0,4" />
+                    <TextBlock Text="{Binding CanvasZoom, StringFormat={}{0:P0}}" Foreground="White" FontSize="11" Width="44" TextAlignment="Center" VerticalAlignment="Center" />
+                    <Button Content="＋" Command="{Binding ZoomCanvasInCommand}" Width="28" Padding="0,4" />
                 </StackPanel>
-            </DockPanel>
+            </Grid>
         </Border>
 
-        <!-- Main Workspace (Sidebar + Canvas) -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="340"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="74" />
+                <ColumnDefinition Width="330" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="278" />
             </Grid.ColumnDefinitions>
 
-            <!-- Sidebar (Template, Media, Text, Kop Surat, Margins) -->
-            <Border Grid.Column="0" Background="#1E293B" BorderBrush="#334155" BorderThickness="0,0,1,0" Padding="16">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <TextBlock Text="PILIHAN TEMPLATE KISI" Foreground="#F8FAFC" FontWeight="Bold" Margin="0,0,0,8"/>
-                        <ListBox Height="200" Background="#0F172A" BorderBrush="#334155" Foreground="White" SelectedIndex="0">
-                            <ListBoxItem Content="Kisi 2x2 (4 Foto Standar Setwan)"/>
-                            <ListBoxItem Content="Kisi 1 Foto Utama Penuh"/>
-                            <ListBoxItem Content="Kisi 2 Foto (Kiri &amp; Kanan)"/>
-                            <ListBoxItem Content="Kisi 6 Foto (2 Kolom x 3 Baris)"/>
-                        </ListBox>
-
-                        <TextBlock Text="UKURAN KERTAS &amp; MARGIN" Foreground="#F8FAFC" FontWeight="Bold" Margin="0,16,0,8"/>
-                        <ComboBox SelectedIndex="0" Background="#0F172A" Foreground="Black">
-                            <ComboBoxItem Content="F4 / Folio (215 x 330 mm) - Baku Setwan"/>
-                            <ComboBoxItem Content="A4 (210 x 297 mm)"/>
-                            <ComboBoxItem Content="Letter (215.9 x 279.4 mm)"/>
-                            <ComboBoxItem Content="Legal (215.9 x 355.6 mm)"/>
-                        </ComboBox>
-                    </StackPanel>
-                </ScrollViewer>
+            <!-- Primary tool rail -->
+            <Border Grid.Column="0" Background="{StaticResource NavigationBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+                <ListBox SelectedIndex="{Binding SelectedSidebarIndex}" Background="Transparent" BorderThickness="0" Padding="8,10">
+                    <ListBox.Resources>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0,0,0,7" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="RailItem" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="11" Padding="4,9">
+                                            <ContentPresenter HorizontalAlignment="Center" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="RailItem" Property="Background" Value="{StaticResource CardBrush}" /></Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="RailItem" Property="Background" Value="#2A0369A1" />
+                                                <Setter TargetName="RailItem" Property="BorderBrush" Value="#660EA5E9" />
+                                                <Setter Property="Foreground" Value="#38BDF8" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.Resources>
+                    <ListBoxItem><StackPanel><TextBlock Text="▦" FontSize="22" HorizontalAlignment="Center" /><TextBlock Text="Kisi" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" /></StackPanel></ListBoxItem>
+                    <ListBoxItem><StackPanel><TextBlock Text="▧" FontSize="22" HorizontalAlignment="Center" /><TextBlock Text="Media" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" /></StackPanel></ListBoxItem>
+                    <ListBoxItem><StackPanel><TextBlock Text="T" FontSize="20" FontWeight="Black" HorizontalAlignment="Center" /><TextBlock Text="Teks" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" /></StackPanel></ListBoxItem>
+                    <ListBoxItem><StackPanel><TextBlock Text="⌑" FontSize="22" HorizontalAlignment="Center" /><TextBlock Text="Kertas" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" /></StackPanel></ListBoxItem>
+                </ListBox>
             </Border>
 
-            <!-- Center WYSIWYG Document Canvas -->
-            <ScrollViewer Grid.Column="1" Background="#020617" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                <Border Background="White" Width="794" MinHeight="1123" Margin="30" Padding="40" CornerRadius="2">
-                    <StackPanel>
-                        <!-- Official Kop Surat -->
-                        <Border BorderBrush="Black" BorderThickness="0,0,0,2" Padding="0,0,0,8" Margin="0,0,0,16">
-                            <StackPanel HorizontalAlignment="Center">
-                                <TextBlock Text="PEMERINTAH KOTA BITUNG" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/>
-                                <TextBlock Text="DEWAN PERWAKILAN RAKYAT DAERAH" FontWeight="Black" FontSize="16" HorizontalAlignment="Center"/>
-                                <TextBlock Text="SEKRETARIAT DEWAN" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Jl. Sam Ratulangi No. 45, Kel. Bitung Barat Satu, Kec. Maesa, Kota Bitung" FontSize="11" HorizontalAlignment="Center"/>
+            <!-- Expanded sidebar drawer -->
+            <Border Grid.Column="1" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+                <TabControl SelectedIndex="{Binding SelectedSidebarIndex}" Background="Transparent" BorderThickness="0">
+                    <TabControl.Resources>
+                        <Style TargetType="TabItem"><Setter Property="Visibility" Value="Collapsed" /></Style>
+                    </TabControl.Resources>
+
+                    <TabItem>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="18">
+                                <TextBlock Text="Kisi Kolase" Style="{StaticResource SectionTitle}" FontSize="17" />
+                                <TextBlock Text="Pilih susunan frame. Foto yang sudah ditempatkan dipertahankan saat tata letak berubah." Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,16" />
+
+                                <Button Command="{Binding ApplyTemplateCommand}" CommandParameter="hero-1" Margin="0,0,0,9" HorizontalContentAlignment="Stretch">
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="64" /><ColumnDefinition /></Grid.ColumnDefinitions><Border Height="48" Margin="0,0,10,0" Background="#E2E8F0" CornerRadius="4" /><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Satu Foto Utama" Foreground="White" FontWeight="Bold" /><TextBlock Text="Hero 16:9" Style="{StaticResource MutedText}" /></StackPanel></Grid>
+                                </Button>
+                                <Button Command="{Binding ApplyTemplateCommand}" CommandParameter="split-2" Margin="0,0,0,9" HorizontalContentAlignment="Stretch">
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="64" /><ColumnDefinition /></Grid.ColumnDefinitions><UniformGrid Columns="2" Height="48" Margin="0,0,10,0"><Border Background="#E2E8F0" Margin="1" /><Border Background="#E2E8F0" Margin="1" /></UniformGrid><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Dua Foto" Foreground="White" FontWeight="Bold" /><TextBlock Text="Kiri dan kanan" Style="{StaticResource MutedText}" /></StackPanel></Grid>
+                                </Button>
+                                <Button Command="{Binding ApplyTemplateCommand}" CommandParameter="grid-4-2x2" Margin="0,0,0,9" HorizontalContentAlignment="Stretch">
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="64" /><ColumnDefinition /></Grid.ColumnDefinitions><UniformGrid Columns="2" Rows="2" Height="48" Margin="0,0,10,0"><Border Background="#E2E8F0" Margin="1" /><Border Background="#E2E8F0" Margin="1" /><Border Background="#E2E8F0" Margin="1" /><Border Background="#E2E8F0" Margin="1" /></UniformGrid><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Empat Foto" Foreground="White" FontWeight="Bold" /><TextBlock Text="Kisi standar Setwan 2×2" Style="{StaticResource MutedText}" /></StackPanel></Grid>
+                                </Button>
+                                <Button Command="{Binding ApplyTemplateCommand}" CommandParameter="grid-6-2x3" Margin="0,0,0,16" HorizontalContentAlignment="Stretch">
+                                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="64" /><ColumnDefinition /></Grid.ColumnDefinitions><UniformGrid Columns="2" Rows="3" Height="54" Margin="0,0,10,0"><Border Background="#E2E8F0" Margin="1" /><Border Background="#E2E8F0" Margin="1" /><Border Background="#E2E8F0" Margin="1" /><Border Background="#E2E8F0" Margin="1" /><Border Background="#E2E8F0" Margin="1" /><Border Background="#E2E8F0" Margin="1" /></UniformGrid><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="Enam Foto" Foreground="White" FontWeight="Bold" /><TextBlock Text="Kisi dokumentasi 2×3" Style="{StaticResource MutedText}" /></StackPanel></Grid>
+                                </Button>
+
+                                <Border Background="#13283A" BorderBrush="#075985" BorderThickness="1" CornerRadius="8" Padding="12">
+                                    <TextBlock Text="Tip: klik ganda foto pada dokumen untuk masuk ke mode crop seperti Canva." Foreground="#BAE6FD" FontSize="11" TextWrapping="Wrap" />
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem>
+                        <Grid Margin="18">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition /></Grid.RowDefinitions>
+                            <TextBlock Text="Media Foto" Style="{StaticResource SectionTitle}" FontSize="17" />
+                            <Button Grid.Row="1" Content="＋ Impor Foto dari Komputer" Command="{Binding ImportPhotosCommand}" Style="{StaticResource PrimaryButton}" Margin="0,6,0,14" />
+                            <ListBox Grid.Row="2" ItemsSource="{Binding MediaGallery}" Background="Transparent" BorderThickness="0" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Command="{Binding DataContext.AssignMediaCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" HorizontalContentAlignment="Stretch" Margin="0,0,0,7">
+                                            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42" /><ColumnDefinition /></Grid.ColumnDefinitions><Border Width="34" Height="34" Background="#0C4A6E" CornerRadius="5"><TextBlock Text="IMG" Foreground="#7DD3FC" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="{Binding FileName}" Foreground="White" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" /><TextBlock Text="Klik untuk tempatkan ke frame" Style="{StaticResource MutedText}" /></StackPanel></Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="18">
+                                <TextBlock Text="Teks &amp; Judul" Style="{StaticResource SectionTitle}" FontSize="17" />
+                                <TextBlock Text="Judul halaman" Style="{StaticResource MutedText}" Margin="0,6,0,5" />
+                                <TextBox Text="{Binding ActivePage.Title, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" MinHeight="58" AcceptsReturn="True" />
+                                <TextBlock Text="Subjudul" Style="{StaticResource MutedText}" Margin="0,14,0,5" />
+                                <TextBox Text="{Binding ActivePage.Subtitle, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" MinHeight="52" />
+                                <TextBlock Text="Keterangan frame terpilih" Style="{StaticResource MutedText}" Margin="0,14,0,5" />
+                                <TextBox Text="{Binding SelectedCell.Caption, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" MinHeight="60" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" />
+                                <CheckBox Content="Tampilkan keterangan foto" Foreground="White" Margin="0,12,0,0" IsChecked="{Binding SelectedCell.ShowCaption}" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="18">
+                                <TextBlock Text="Kertas &amp; Margin" Style="{StaticResource SectionTitle}" FontSize="17" />
+                                <TextBlock Text="Ukuran kertas" Style="{StaticResource MutedText}" Margin="0,8,0,5" />
+                                <ComboBox SelectedValue="{Binding CurrentProject.PaperSize}" SelectedValuePath="Content">
+                                    <ComboBoxItem Content="F4" /><ComboBoxItem Content="A4" /><ComboBoxItem Content="Letter" /><ComboBoxItem Content="Legal" />
+                                </ComboBox>
+                                <TextBlock Text="Orientasi" Style="{StaticResource MutedText}" Margin="0,14,0,5" />
+                                <ComboBox SelectedValue="{Binding CurrentProject.Orientation}" SelectedValuePath="Content">
+                                    <ComboBoxItem Content="Portrait" /><ComboBoxItem Content="Landscape" />
+                                </ComboBox>
+                                <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,16,0,0">
+                                    <StackPanel><TextBlock Text="Margin dokumen" Foreground="White" FontWeight="Bold" FontSize="12" /><TextBlock Text="Atas 2 cm • Bawah 2 cm" Style="{StaticResource MutedText}" Margin="0,5,0,0" /><TextBlock Text="Kiri 2,5 cm • Kanan 2 cm" Style="{StaticResource MutedText}" Margin="0,2,0,0" /></StackPanel>
+                                </Border>
+                                <Button Content="＋ Tambah Halaman" Command="{Binding AddPageCommand}" Style="{StaticResource PrimaryButton}" Margin="0,18,0,0" />
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </Border>
+
+            <!-- WYSIWYG workspace -->
+            <Grid Grid.Column="2" Background="#080D17">
+                <Grid.RowDefinitions><RowDefinition Height="*" /><RowDefinition Height="42" /></Grid.RowDefinitions>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" PanningMode="Both">
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Top" Margin="50">
+                        <Grid.LayoutTransform><ScaleTransform ScaleX="{Binding CanvasZoom}" ScaleY="{Binding CanvasZoom}" /></Grid.LayoutTransform>
+                        <Border Width="760" Height="1166" Background="White" CornerRadius="2" Padding="52,42" BorderBrush="#CBD5E1" BorderThickness="1">
+                            <Border.Effect><DropShadowEffect BlurRadius="28" Opacity=".55" ShadowDepth="8" Color="#000000" /></Border.Effect>
+                            <Grid>
+                                <Grid.RowDefinitions><RowDefinition Height="104" /><RowDefinition Height="74" /><RowDefinition Height="*" /><RowDefinition Height="28" /></Grid.RowDefinitions>
+                                <Border Grid.Row="0" BorderBrush="#111827" BorderThickness="0,0,0,3" Padding="0,0,0,8">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="PEMERINTAH KOTA BITUNG" Foreground="#111827" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" />
+                                        <TextBlock Text="DEWAN PERWAKILAN RAKYAT DAERAH" Foreground="#020617" FontWeight="Black" FontSize="18" HorizontalAlignment="Center" />
+                                        <TextBlock Text="SEKRETARIAT DEWAN" Foreground="#111827" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" />
+                                        <TextBlock Text="Jl. Sam Ratulangi No. 45, Kota Bitung • Telp. (0438) 21115" Foreground="#334155" FontSize="9" HorizontalAlignment="Center" Margin="0,3,0,0" />
+                                    </StackPanel>
+                                </Border>
+
+                                <StackPanel Grid.Row="1" Margin="0,12,0,8">
+                                    <TextBlock Text="{Binding ActivePage.Title}" Foreground="#0F172A" FontWeight="Black" FontSize="15" TextAlignment="Center" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding ActivePage.Subtitle}" Foreground="#475569" FontSize="11" FontStyle="Italic" TextAlignment="Center" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                </StackPanel>
+
+                                <ItemsControl Grid.Row="2" ItemsSource="{Binding ActivePage.Cells}" Height="{Binding GridHeight}" VerticalAlignment="Top" Margin="0,8,0,10">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><UniformGrid Rows="{Binding DataContext.GridRows, RelativeSource={RelativeSource AncestorType=Window}}" Columns="{Binding DataContext.GridColumns, RelativeSource={RelativeSource AncestorType=Window}}" /></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemContainerStyle><Style TargetType="ContentPresenter"><Setter Property="Margin" Value="5" /></Style></ItemsControl.ItemContainerStyle>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <controls:PhotoFrameControl PhotoSelected="PhotoFrame_OnPhotoSelected" RequestPhoto="PhotoFrame_OnRequestPhoto" CropModeChanged="PhotoFrame_OnCropModeChanged" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <DockPanel Grid.Row="3" LastChildFill="False">
+                                    <TextBlock Text="SEKRETARIAT DPRD KOTA BITUNG" Foreground="#94A3B8" FontSize="8" VerticalAlignment="Center" />
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding ActivePage.PageNumber, StringFormat=Halaman {0}}" Foreground="#64748B" FontSize="8" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+
+                <Border Grid.Row="1" Background="#0B1120" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Button Content="‹" Command="{Binding PreviousPageCommand}" Width="30" Padding="0,3" />
+                        <TextBlock Foreground="White" FontSize="11" Margin="10,0" VerticalAlignment="Center"><Run Text="Halaman " /><Run Text="{Binding ActivePage.PageNumber}" /><Run Text=" / " /><Run Text="{Binding CurrentProject.Pages.Count}" /></TextBlock>
+                        <Button Content="›" Command="{Binding NextPageCommand}" Width="30" Padding="0,3" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Context inspector -->
+            <Border Grid.Column="3" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1,0,0,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="17">
+                        <TextBlock Text="Properti Foto" Style="{StaticResource SectionTitle}" FontSize="16" />
+                        <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="11" Margin="0,3,0,14">
+                            <StackPanel>
+                                <TextBlock Text="{Binding SelectedCell.Photo.FileName, FallbackValue=Belum ada frame dipilih, TargetNullValue=Frame kosong}" Foreground="White" FontWeight="SemiBold" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="Double-click foto untuk crop" Style="{StaticResource MutedText}" Margin="0,3,0,0" />
                             </StackPanel>
                         </Border>
 
-                        <!-- Title and Meta -->
-                        <TextBlock Text="DOKUMENTASI FOTO KEGIATAN PERSIDANGAN" FontWeight="Black" FontSize="15" HorizontalAlignment="Center" Margin="0,0,0,4"/>
-                        <TextBlock Text="Masa Persidangan Ketiga Tahun Sidang 2025/2026" FontSize="12" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                        <TextBlock Text="Zoom foto" Style="{StaticResource MutedText}" />
+                        <Slider Minimum="1" Maximum="8" SmallChange=".05" LargeChange=".25" Value="{Binding SelectedCell.Photo.Transform.Scale, Mode=TwoWay}" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" Margin="0,5,0,3" />
+                        <TextBlock Text="{Binding SelectedCell.Photo.Transform.Scale, StringFormat={}{0:F2}×}" Foreground="#7DD3FC" FontSize="10" HorizontalAlignment="Right" />
 
-                        <!-- Photo Grid 2x2 -->
-                        <UniformGrid Rows="2" Columns="2" Margin="0,10">
-                            <Border BorderBrush="#CBD5E1" BorderThickness="1" Height="220" Margin="4" Background="#F1F5F9">
-                                <TextBlock Text="[ Slot Foto 1 - Drag &amp; Drop Foto ]" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#64748B" FontSize="12"/>
-                            </Border>
-                            <Border BorderBrush="#CBD5E1" BorderThickness="1" Height="220" Margin="4" Background="#F1F5F9">
-                                <TextBlock Text="[ Slot Foto 2 - Drag &amp; Drop Foto ]" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#64748B" FontSize="12"/>
-                            </Border>
-                            <Border BorderBrush="#CBD5E1" BorderThickness="1" Height="220" Margin="4" Background="#F1F5F9">
-                                <TextBlock Text="[ Slot Foto 3 - Drag &amp; Drop Foto ]" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#64748B" FontSize="12"/>
-                            </Border>
-                            <Border BorderBrush="#CBD5E1" BorderThickness="1" Height="220" Margin="4" Background="#F1F5F9">
-                                <TextBlock Text="[ Slot Foto 4 - Drag &amp; Drop Foto ]" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#64748B" FontSize="12"/>
-                            </Border>
+                        <TextBlock Text="Rotasi" Style="{StaticResource MutedText}" Margin="0,12,0,0" />
+                        <Slider Minimum="0" Maximum="359" SmallChange="1" LargeChange="15" Value="{Binding SelectedCell.Photo.Transform.Rotation, Mode=TwoWay}" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" Margin="0,5,0,3" />
+                        <TextBlock Text="{Binding SelectedCell.Photo.Transform.Rotation, StringFormat={}{0:F0}°}" Foreground="#7DD3FC" FontSize="10" HorizontalAlignment="Right" />
+
+                        <UniformGrid Columns="2" Margin="0,14,0,0">
+                            <Button Content="Balik H" Click="FlipHorizontal_Click" Margin="0,0,4,6" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" />
+                            <Button Content="Balik V" Click="FlipVertical_Click" Margin="4,0,0,6" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" />
+                            <Button Content="Ganti Foto" Click="ReplacePhoto_Click" Margin="0,0,4,0" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" />
+                            <Button Content="Hapus Foto" Click="RemovePhoto_Click" Margin="4,0,0,0" Background="#7F1D1D" IsEnabled="{Binding SelectedCell, Converter={StaticResource NullToBooleanConverter}}" />
                         </UniformGrid>
+
+                        <Border Background="#3B2508" BorderBrush="#92400E" BorderThickness="1" CornerRadius="8" Padding="11" Margin="0,18,0,0" Visibility="{Binding IsCropActive, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <StackPanel><TextBlock Text="Mode Crop Aktif" Foreground="#FDE68A" FontWeight="Bold" FontSize="11" /><TextBlock Text="Tarik foto di belakang frame. Scroll untuk zoom. Enter menyimpan, Esc membatalkan." Foreground="#FCD34D" FontSize="10" TextWrapping="Wrap" Margin="0,4,0,8" /><UniformGrid Columns="2"><Button Content="Batal" Click="CancelCrop_Click" Margin="0,0,4,0" /><Button Content="Selesai" Click="CommitCrop_Click" Style="{StaticResource SuccessButton}" Margin="4,0,0,0" /></UniformGrid></StackPanel>
+                        </Border>
                     </StackPanel>
-                </Border>
-            </ScrollViewer>
+                </ScrollViewer>
+            </Border>
         </Grid>
 
-        <!-- Status Bar -->
-        <StatusBar Grid.Row="2" Background="#0F172A" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="0,1,0,0">
-            <StatusBarItem>
-                <TextBlock Text="{Binding StatusMessage}"/>
-            </StatusBarItem>
+        <StatusBar Grid.Row="3" Background="#070B14" Foreground="{StaticResource TextSecondaryBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0">
+            <StatusBarItem><TextBlock Text="{Binding StatusMessage}" FontSize="10" /></StatusBarItem>
+            <Separator />
+            <StatusBarItem><TextBlock Text="Crop non-destruktif • Original tetap aman • Ekspor resolusi tinggi" Foreground="#38BDF8" FontSize="10" /></StatusBarItem>
         </StatusBar>
     </Grid>
 </Window>

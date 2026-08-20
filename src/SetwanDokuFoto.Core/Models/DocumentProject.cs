@@ -1,3 +1,7 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
 namespace SetwanDokuFoto.Core.Models;
 
 public class DocumentProject
@@ -10,7 +14,7 @@ public class DocumentProject
     public PageMargins Margins { get; set; } = new(2.0, 2.0, 2.5, 2.0); // Satuan cm
     public string FontFamily { get; set; } = "Arial";
     public KopSurat KopSurat { get; set; } = new();
-    public List<DocumentPage> Pages { get; set; } = new();
+    public ObservableCollection<DocumentPage> Pages { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
@@ -38,7 +42,7 @@ public class DocumentPage
     public string? ActivityDescription { get; set; }
     public List<MetaTableItem> MetaTable { get; set; } = new();
     public string TemplateLayoutId { get; set; } = "grid-4-2x2";
-    public List<CollageCell> Cells { get; set; } = new();
+    public ObservableCollection<CollageCell> Cells { get; set; } = new();
     public SignatureBlock? SignatureBlock { get; set; }
 }
 
@@ -48,18 +52,45 @@ public class MetaTableItem
     public string Value { get; set; } = string.Empty;
 }
 
-public class CollageCell
+public class CollageCell : INotifyPropertyChanged
 {
+    private PhotoItem? _photo;
+    private string? _caption;
+    private bool _showCaption = true;
+
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public int Row { get; set; }
     public int Column { get; set; }
     public int RowSpan { get; set; } = 1;
     public int ColumnSpan { get; set; } = 1;
-    public PhotoItem? Photo { get; set; }
-    public string? Caption { get; set; }
-    public bool ShowCaption { get; set; } = true;
+    public PhotoItem? Photo
+    {
+        get => _photo;
+        set => SetField(ref _photo, value);
+    }
+
+    public string? Caption
+    {
+        get => _caption;
+        set => SetField(ref _caption, value);
+    }
+
+    public bool ShowCaption
+    {
+        get => _showCaption;
+        set => SetField(ref _showCaption, value);
+    }
     public string AspectRatio { get; set; } = "4:3";
     public int Rotation { get; set; } = 0;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return;
+        field = value;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }
 
 public class PhotoItem
@@ -70,7 +101,105 @@ public class PhotoItem
     public string? CapturedDate { get; set; }
     public string? Category { get; set; }
     public byte[]? ImageBytes { get; set; }
+    public PhotoTransform Transform { get; set; } = new();
 }
+
+/// <summary>
+/// Non-destructive photo placement. Offsets are stored relative to the frame
+/// size, Scale is a multiplier on top of the automatic cover scale, and
+/// Rotation is expressed in degrees. The source bitmap is never modified.
+/// </summary>
+public sealed class PhotoTransform : INotifyPropertyChanged
+{
+    private double _offsetX;
+    private double _offsetY;
+    private double _scale = 1;
+    private double _rotation;
+    private bool _flipHorizontal;
+    private bool _flipVertical;
+
+    public double OffsetX
+    {
+        get => _offsetX;
+        set => SetField(ref _offsetX, value);
+    }
+
+    public double OffsetY
+    {
+        get => _offsetY;
+        set => SetField(ref _offsetY, value);
+    }
+
+    public double Scale
+    {
+        get => _scale;
+        set => SetField(ref _scale, Math.Max(1, value));
+    }
+
+    public double Rotation
+    {
+        get => _rotation;
+        set => SetField(ref _rotation, NormalizeAngle(value));
+    }
+
+    public bool FlipHorizontal
+    {
+        get => _flipHorizontal;
+        set => SetField(ref _flipHorizontal, value);
+    }
+
+    public bool FlipVertical
+    {
+        get => _flipVertical;
+        set => SetField(ref _flipVertical, value);
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public PhotoTransformSnapshot Snapshot() =>
+        new(OffsetX, OffsetY, Scale, Rotation, FlipHorizontal, FlipVertical);
+
+    public void Restore(PhotoTransformSnapshot snapshot)
+    {
+        OffsetX = snapshot.OffsetX;
+        OffsetY = snapshot.OffsetY;
+        Scale = snapshot.Scale;
+        Rotation = snapshot.Rotation;
+        FlipHorizontal = snapshot.FlipHorizontal;
+        FlipVertical = snapshot.FlipVertical;
+    }
+
+    public void Reset()
+    {
+        OffsetX = 0;
+        OffsetY = 0;
+        Scale = 1;
+        Rotation = 0;
+        FlipHorizontal = false;
+        FlipVertical = false;
+    }
+
+    private static double NormalizeAngle(double value)
+    {
+        var normalized = value % 360;
+        return normalized < 0 ? normalized + 360 : normalized;
+    }
+
+    private void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return;
+        field = value;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
+
+public readonly record struct PhotoTransformSnapshot(
+    double OffsetX,
+    double OffsetY,
+    double Scale,
+    double Rotation,
+    bool FlipHorizontal,
+    bool FlipVertical);
 
 public class SignatureBlock
 {

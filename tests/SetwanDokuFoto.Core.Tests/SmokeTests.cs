@@ -33,4 +33,47 @@ public class CoreModelSmokeTests
         page.Cells.Should().HaveCount(1);
         page.Cells[0].Caption.Should().Be("Foto Pembukaan Sidang");
     }
+
+    [Fact]
+    public void CoverScale_Should_Always_Fill_The_Frame()
+    {
+        var scale = CanvaCropMath.CalculateCoverScale(500, 500, 4000, 3000);
+
+        (4000 * scale).Should().BeGreaterThanOrEqualTo(500);
+        (3000 * scale).Should().BeGreaterThanOrEqualTo(500);
+    }
+
+    [Fact]
+    public void Rotated_Cover_Should_Increase_Minimum_Zoom_When_Needed()
+    {
+        var multiplier = CanvaCropMath.CalculateRotationCoverMultiplier(
+            frameWidth: 500,
+            frameHeight: 300,
+            coveredImageWidth: 500,
+            coveredImageHeight: 375,
+            rotationDegrees: 45);
+
+        multiplier.Should().BeGreaterThan(1);
+    }
+
+    [Fact]
+    public void Crop_Reset_Should_Restore_NonDestructive_Defaults()
+    {
+        var transform = new PhotoTransform
+        {
+            OffsetX = .2,
+            OffsetY = -.1,
+            Scale = 1.7,
+            Rotation = 27,
+            FlipHorizontal = true
+        };
+
+        transform.Reset();
+
+        transform.OffsetX.Should().Be(0);
+        transform.OffsetY.Should().Be(0);
+        transform.Scale.Should().Be(1);
+        transform.Rotation.Should().Be(0);
+        transform.FlipHorizontal.Should().BeFalse();
+    }
 }
